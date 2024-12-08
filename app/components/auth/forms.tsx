@@ -2,14 +2,12 @@ import { useSession } from "@/hooks/use-session";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Lock, Mail } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
 export const LoginForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useSession();
-  const navigate = useNavigate();
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,8 +19,6 @@ export const LoginForm = () => {
       email: formData.email as string,
       password: formData.password as string,
     };
-
-    console.log(email, password);
 
     const res = await login(email, password);
 

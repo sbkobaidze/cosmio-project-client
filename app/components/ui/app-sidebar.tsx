@@ -10,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 
 import {
@@ -51,6 +52,8 @@ export function AppSidebar() {
 
   return (
     <>
+      <SidebarTrigger />
+
       <NotificationsDialog />
       <Sidebar>
         <SidebarContent>

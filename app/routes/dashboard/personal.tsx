@@ -16,7 +16,7 @@ const PersonalTable = () => {
       <h3>
         Total count:{" "}
         <span className="text-xl font-bold">
-          {personalLogins.sign_in_count}
+          {personalLogins?.sign_in_count}
         </span>{" "}
       </h3>
       <DataTable

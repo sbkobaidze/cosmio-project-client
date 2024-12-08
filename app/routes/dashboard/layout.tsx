@@ -7,6 +7,7 @@ import { Logins } from "types";
 
 export const socket = io("http://localhost:3434", {
   withCredentials: true,
+  autoConnect: false,
 });
 
 const Layout = () => {
@@ -17,6 +18,12 @@ const Layout = () => {
       addNotification: state.addNotification,
     };
   });
+
+  useEffect(() => {
+    if (user?.email && !socket.connected) {
+      socket.connect();
+    }
+  }, [user]);
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -46,7 +53,7 @@ const Layout = () => {
     // return () => {
     //   socket.disconnect();
     // };
-  }, []);
+  }, [user]);
 
   if (loading) return <div>Loading...</div>;
   if (!user) return <Navigate to="/" />;

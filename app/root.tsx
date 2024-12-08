@@ -11,7 +11,7 @@ import {
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
 import { AppSidebar } from "./components/ui/app-sidebar";
-import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar";
+import { SidebarProvider } from "./components/ui/sidebar";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -39,7 +39,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <body>
         <SidebarProvider>
           <AppSidebar />
-          <SidebarTrigger />
           {children}
           <ScrollRestoration />
           <Scripts />
