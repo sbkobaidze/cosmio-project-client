@@ -63,6 +63,9 @@ export function AppSidebar() {
     if (user?.email && !socket.connected) {
       socket.connect();
     }
+  }, [user]);
+
+  useEffect(() => {
     socket.on("connect", () => {
       console.log("Connected to socket server");
     });
@@ -86,7 +89,7 @@ export function AppSidebar() {
     socket.on("notification", (data: { message: string }) => {
       addNotification(data.message);
     });
-  }, [user]);
+  }, []);
 
   if (location.pathname === "/") return null;
 
