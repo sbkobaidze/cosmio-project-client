@@ -23,9 +23,6 @@ const Layout = () => {
     if (user?.email && !socket.connected) {
       socket.connect();
     }
-  }, [user]);
-
-  useEffect(() => {
     socket.on("connect", () => {
       console.log("Connected to socket server");
     });
@@ -49,10 +46,6 @@ const Layout = () => {
     socket.on("notification", (data: { message: string }) => {
       addNotification(data.message);
     });
-
-    // return () => {
-    //   socket.disconnect();
-    // };
   }, [user]);
 
   if (loading) return <div>Loading...</div>;
