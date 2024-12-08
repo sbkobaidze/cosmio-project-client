@@ -72,7 +72,6 @@ export function useSession() {
   }> => {
     const res = await api.register(email, password);
 
-    console.log(res.data, "register why showing dt");
     if (isErrorResponse(res)) {
       return {
         success: false,
@@ -80,7 +79,6 @@ export function useSession() {
       };
     }
     await fetchUser();
-    navigate("/personal");
 
     return { success: true, error: null };
   };

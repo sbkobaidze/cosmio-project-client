@@ -20,8 +20,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "@/hooks/use-session";
-import { useNotifications } from "@/lib/state";
+import { useLoginsStore, useNotifications } from "@/lib/state";
+import { useEffect } from "react";
 import { useLocation } from "react-router";
+import { io } from "socket.io-client";
+import { Logins } from "types";
 import NotificationsDialog from "../notifications-dialog";
 
 // Menu items.
@@ -38,15 +41,52 @@ const items = [
   },
 ];
 
+export const socket = io("http://localhost:3434", {
+  withCredentials: true,
+  autoConnect: false,
+});
+
 export function AppSidebar() {
-  const { user, logout } = useSession();
+  const { user, loading, logout } = useSession();
+  const { notifications, addNotification, showDialog } = useNotifications(
+    (state) => {
+      return {
+        notifications: state.notifications,
+        addNotification: state.addNotification,
+        showDialog: state.showDialog,
+      };
+    }
+  );
   const location = useLocation();
-  const { notifications, showDialog } = useNotifications((state) => {
-    return {
-      notifications: state.notifications,
-      showDialog: state.showDialog,
-    };
-  });
+
+  useEffect(() => {
+    if (user?.email && !socket.connected) {
+      socket.connect();
+    }
+    socket.on("connect", () => {
+      console.log("Connected to socket server");
+    });
+
+    socket.on("users", (data: { global: Logins[]; personal: Logins }) => {
+      console.log(data, "users");
+
+      useLoginsStore.setState({
+        personalLogins: data.personal,
+        globalLogins: data.global,
+      });
+    });
+
+    socket.on("global_update", (data: { users: Logins[] }) => {
+      console.log(data, "global_update");
+      useLoginsStore.setState({
+        globalLogins: data.users,
+      });
+    });
+
+    socket.on("notification", (data: { message: string }) => {
+      addNotification(data.message);
+    });
+  }, [user]);
 
   if (location.pathname === "/") return null;
 

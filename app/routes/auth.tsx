@@ -50,7 +50,7 @@ export default function AuthPage() {
             </TabsContent>
 
             <TabsContent value="register">
-              <RegisterForm />
+              <RegisterForm setActiveTab={setActiveTab} />
             </TabsContent>
           </Tabs>
         </CardContent>

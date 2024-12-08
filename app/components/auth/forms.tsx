@@ -71,7 +71,11 @@ export const LoginForm = () => {
   );
 };
 
-export const RegisterForm = () => {
+export const RegisterForm = ({
+  setActiveTab,
+}: {
+  setActiveTab: (tab: string) => void;
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useSession();
 
@@ -98,6 +102,7 @@ export const RegisterForm = () => {
       toast({
         description: "Account created successfully",
       });
+      setActiveTab("login");
     } else
       toast({
         description: data.error,
