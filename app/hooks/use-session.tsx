@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       useNotifications.setState({ notifications: [] });
       useLoginsStore.setState({
-        globalLogins: [],
+        globalLogins: null,
         personalLogins: null,
       });
 

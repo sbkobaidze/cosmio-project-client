@@ -26,3 +26,5 @@ export type GlobalLogins = {
   total_sign_ins: number;
   dates: { date: string; email: string }[];
 };
+
+export type DateWEmail = { date: string; email: string };

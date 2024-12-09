@@ -109,7 +109,10 @@ export function DataTable<TData, TValue>({
     });
   };
 
-  const handleDateRangeChange = (from: Date, to: Date) => {
+  const handleDateRangeChange = (
+    from: Date | undefined,
+    to: Date | undefined
+  ) => {
     setDateRange({ from, to });
     socket.emit("update_filters", {
       pageSize: pageSize,
@@ -159,7 +162,7 @@ export function DataTable<TData, TValue>({
               selected={{ from: dateRange.from, to: dateRange.to }}
               //@ts-ignore
               onSelect={(range) => {
-                handleDateRangeChange(range.from, range.to);
+                handleDateRangeChange(range?.from, range?.to);
               }}
               numberOfMonths={2}
             />
