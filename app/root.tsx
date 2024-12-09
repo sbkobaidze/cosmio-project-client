@@ -12,6 +12,7 @@ import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
 import { AppSidebar } from "./components/ui/app-sidebar";
 import { SidebarProvider } from "./components/ui/sidebar";
+import { AuthProvider } from "./hooks/use-session";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -38,11 +39,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         <SidebarProvider>
-          <AppSidebar />
-          {children}
-          <ScrollRestoration />
-          <Scripts />
-          <Toaster />
+          <AuthProvider>
+            <AppSidebar />
+            {children}
+            <ScrollRestoration />
+            <Scripts />
+            <Toaster />
+          </AuthProvider>
         </SidebarProvider>
       </body>
     </html>

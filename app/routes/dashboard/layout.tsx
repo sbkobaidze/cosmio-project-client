@@ -1,11 +1,18 @@
 import { useSession } from "@/hooks/use-session";
 import { Loader } from "lucide-react";
-import { Outlet } from "react-router";
+import { Navigate, Outlet } from "react-router";
 
 const Layout = () => {
   const { user, loading } = useSession();
 
-  if (loading && !user) return <Loader className="animate-spin" />;
+  if (loading)
+    return (
+      <div className="w-screen h-screen items-center justify-center flex">
+        <Loader className="animate-spin" />
+      </div>
+    );
+
+  if (!user) return <Navigate to="/" />;
 
   return (
     <>

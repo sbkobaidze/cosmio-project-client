@@ -1,9 +1,51 @@
 import { api, isErrorResponse } from "@/lib/client";
-import { useCallback, useEffect, useState } from "react";
+import { useLoginsStore, useNotifications } from "@/lib/state";
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useNavigate } from "react-router";
+import { io, Socket } from "socket.io-client";
 import type { SessionState } from "types";
 
-export function useSession() {
+const socket = io("http://localhost:3434", {
+  withCredentials: true,
+  autoConnect: false,
+});
+
+interface AuthContextType {
+  user: SessionState["user"];
+  loading: boolean;
+  error: string | null;
+  socket: Socket;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{
+    success: boolean;
+    error: string | null;
+  }>;
+  logout: () => Promise<{
+    success: boolean;
+    error: string | null;
+  }>;
+  register: (
+    email: string,
+    password: string
+  ) => Promise<{
+    success: boolean;
+    error: string | null;
+  }>;
+  refresh: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<SessionState>({
     user: null,
     loading: true,
@@ -14,6 +56,7 @@ export function useSession() {
   const fetchUser = useCallback(async () => {
     try {
       const response = await api.getProtected();
+
       if (isErrorResponse(response)) {
         setSession({
           user: null,
@@ -39,21 +82,21 @@ export function useSession() {
 
   useEffect(() => {
     fetchUser();
-  }, [fetchUser]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
       const response = await api.login(email, password);
 
-      console.log(response);
       if (isErrorResponse(response)) {
         return {
           success: false,
           error: response.message || "Login failed",
         };
       }
-      await fetchUser();
       navigate("/personal");
+      await fetchUser();
+
       return { success: true, error: null };
     } catch (error) {
       return {
@@ -63,13 +106,7 @@ export function useSession() {
     }
   };
 
-  const register = async (
-    email: string,
-    password: string
-  ): Promise<{
-    success: boolean;
-    error: string | null;
-  }> => {
+  const register = async (email: string, password: string) => {
     const res = await api.register(email, password);
 
     if (isErrorResponse(res)) {
@@ -85,13 +122,22 @@ export function useSession() {
 
   const logout = async () => {
     try {
-      const response = await api.logout();
+      await api.logout();
 
       setSession({
         user: null,
         loading: false,
         error: null,
       });
+
+      socket.disconnect();
+
+      useNotifications.setState({ notifications: [] });
+      useLoginsStore.setState({
+        globalLogins: [],
+        personalLogins: null,
+      });
+
       navigate("/");
       return { success: true, error: null };
     } catch {
@@ -102,7 +148,7 @@ export function useSession() {
     }
   };
 
-  return {
+  const value = {
     user: session.user,
     loading: session.loading,
     error: session.error,
@@ -110,5 +156,16 @@ export function useSession() {
     logout,
     register,
     refresh: fetchUser,
+    socket: socket,
   };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useSession() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useSession must be used within an AuthProvider");
+  }
+  return context;
 }

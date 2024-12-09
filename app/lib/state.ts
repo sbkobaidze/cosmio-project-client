@@ -1,19 +1,22 @@
-import { Logins } from "types";
+import { DateWEmail, GlobalLogins, PersonalLogins } from "types";
 import { shallow } from "zustand/shallow";
 import { createWithEqualityFn } from "zustand/traditional";
 
 export const useLoginsStore = createWithEqualityFn<{
-  globalLogins: Logins[];
-  personalLogins: Logins | null;
-  addGlobalLogin: (login: Logins[]) => void;
+  globalLogins: GlobalLogins | null;
+  personalLogins: PersonalLogins | null;
+  addGlobalLogin: (login: { dates: DateWEmail }) => void;
 }>(
   (set) => ({
     personalLogins: null,
-    globalLogins: [],
+    globalLogins: null,
 
     addGlobalLogin: (login) =>
       set((state) => ({
-        globalLogins: login,
+        globalLogins: {
+          total_sign_ins: state.globalLogins?.total_sign_ins! + 1,
+          dates: [...state.globalLogins?.dates!, login.dates],
+        },
       })),
   }),
   shallow
@@ -22,8 +25,11 @@ export const useLoginsStore = createWithEqualityFn<{
 export const useNotifications = createWithEqualityFn<{
   notifications: string[];
   addNotification: (notification: string) => void;
+  showDialog: boolean;
 }>(
   (set, get) => ({
+    showDialog: false,
+
     notifications: [],
     addNotification: (notification: string) =>
       set((state) => ({

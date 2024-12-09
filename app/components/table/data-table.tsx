@@ -7,7 +7,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   Table,
@@ -33,16 +33,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useSession } from "@/hooks/use-session";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useLocation } from "react-router";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  totalSignIns: number;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data: initialData,
+  totalSignIns,
 }: DataTableProps<TData, TValue>) {
   const [data, setData] = useState(initialData);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -56,13 +60,14 @@ export function DataTable<TData, TValue>({
     to: undefined,
   });
 
+  const { socket } = useSession();
+  const location = useLocation();
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
-
     state: {
       sorting,
       pagination: {
@@ -70,7 +75,6 @@ export function DataTable<TData, TValue>({
         pageSize,
       },
     },
-
     onSortingChange: setSorting,
     onPaginationChange: (updater) => {
       if (typeof updater === "function") {
@@ -85,24 +89,46 @@ export function DataTable<TData, TValue>({
         setPageSize(updater.pageSize);
       }
     },
-    manualPagination: false,
+    manualPagination: true,
+    pageCount: Math.ceil(totalSignIns / pageSize),
   });
 
-  const handleDateFilter = (dates: {
-    from: Date | undefined;
-    to: Date | undefined;
-  }) => {
-    setDateRange(dates);
-    setPageIndex(0); // Reset to first page when filtering
-    if (dates.from && dates.to) {
-      const filteredData = initialData.filter((item: any) => {
-        const itemDate = new Date(item.created_at);
-        return itemDate >= dates.from! && itemDate <= dates.to!;
-      });
-      setData(filteredData);
-    } else {
-      setData(initialData);
-    }
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
+
+  const handlePageSizeChange = (value: string) => {
+    const newSize = Number(value);
+    table.setPageSize(newSize);
+    setPageSize(newSize);
+
+    // Optimistic update
+    socket.emit("update_filters", {
+      pageSize: newSize,
+      type: location.pathname === "/personal" ? "personal" : "global",
+    });
+  };
+
+  const handleDateRangeChange = (from: Date, to: Date) => {
+    setDateRange({ from, to });
+    socket.emit("update_filters", {
+      pageSize: pageSize,
+      from: from,
+      to: to,
+      type: location.pathname === "/personal" ? "personal" : "global",
+    });
+  };
+
+  const handlePaginationChange = (newPageIndex: number) => {
+    console.log(newPageIndex, "test123");
+    setPageIndex(newPageIndex);
+    socket.emit("update_filters", {
+      pageIndex: newPageIndex,
+      pageSize,
+      from: dateRange.from,
+      to: dateRange.to,
+      type: location.pathname === "/personal" ? "personal" : "global",
+    });
   };
 
   return (
@@ -132,7 +158,9 @@ export function DataTable<TData, TValue>({
               mode="range"
               selected={{ from: dateRange.from, to: dateRange.to }}
               //@ts-ignore
-              onSelect={handleDateFilter}
+              onSelect={(range) => {
+                handleDateRangeChange(range.from, range.to);
+              }}
               numberOfMonths={2}
             />
           </PopoverContent>
@@ -140,7 +168,9 @@ export function DataTable<TData, TValue>({
 
         <Select
           value={pageSize.toString()}
-          onValueChange={(value) => table.setPageSize(Number(value))}
+          onValueChange={(value) => {
+            handlePageSizeChange(value);
+          }}
         >
           <SelectTrigger className="w-32">
             <SelectValue placeholder="Rows per page" />
@@ -213,7 +243,11 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.previousPage()}
+            onClick={() => {
+              table.previousPage();
+
+              handlePaginationChange(pageIndex - 1);
+            }}
             disabled={!table.getCanPreviousPage()}
           >
             Previous
@@ -221,7 +255,10 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => table.nextPage()}
+            onClick={() => {
+              table.nextPage();
+              handlePaginationChange(pageIndex + 1);
+            }}
             disabled={!table.getCanNextPage()}
           >
             Next

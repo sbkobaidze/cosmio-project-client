@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Link } from "react-router-dom";
 
 import {
   DropdownMenu,
@@ -23,8 +24,7 @@ import { useSession } from "@/hooks/use-session";
 import { useLoginsStore, useNotifications } from "@/lib/state";
 import { useEffect } from "react";
 import { useLocation } from "react-router";
-import { io } from "socket.io-client";
-import { Logins } from "types";
+import { DateWEmail, GlobalLogins, PersonalLogins } from "types";
 import NotificationsDialog from "../notifications-dialog";
 
 // Menu items.
@@ -41,13 +41,8 @@ const items = [
   },
 ];
 
-export const socket = io("http://localhost:3434", {
-  withCredentials: true,
-  autoConnect: false,
-});
-
 export function AppSidebar() {
-  const { user, loading, logout } = useSession();
+  const { user, loading, logout, socket } = useSession();
   const { notifications, addNotification, showDialog } = useNotifications(
     (state) => {
       return {
@@ -57,38 +52,70 @@ export function AppSidebar() {
       };
     }
   );
+
+  const { addGlobalLogin } = useLoginsStore((state) => {
+    return {
+      addGlobalLogin: state.addGlobalLogin,
+    };
+  });
+
   const location = useLocation();
 
   useEffect(() => {
     if (user?.email && !socket.connected) {
       socket.connect();
     }
-  }, [user]);
+  }, [user?.email, loading]);
 
   useEffect(() => {
-    socket.on("connect", () => {
-      console.log("Connected to socket server");
-    });
+    socket.on("connect", () => {});
 
-    socket.on("users", (data: { global: Logins[]; personal: Logins }) => {
-      console.log(data, "users");
+    socket.on(
+      "users",
+      (data: { global: GlobalLogins; personal: PersonalLogins }) => {
+        useLoginsStore.setState({
+          personalLogins: data.personal,
+          globalLogins: data.global,
+        });
+      }
+    );
 
+    socket.on("global_update", (data: GlobalLogins) => {
+      console.log(data, "global_update", "hello");
       useLoginsStore.setState({
-        personalLogins: data.personal,
-        globalLogins: data.global,
+        globalLogins: data,
       });
     });
 
-    socket.on("global_update", (data: { users: Logins[] }) => {
-      console.log(data, "global_update");
-      useLoginsStore.setState({
-        globalLogins: data.users,
+    socket.on("increment_global", (data: DateWEmail) => {
+      addGlobalLogin({
+        dates: data,
+      });
+    });
+
+    socket.on("personal_update", (data: { dates: { date: string }[] }) => {
+      console.log(data);
+      useLoginsStore.setState((state) => {
+        return {
+          personalLogins: {
+            dates: data.dates,
+            total_sign_ins: state.personalLogins?.total_sign_ins!,
+          },
+        };
       });
     });
 
     socket.on("notification", (data: { message: string }) => {
       addNotification(data.message);
     });
+
+    return () => {
+      socket.removeListener("users");
+      socket.removeListener("global_update");
+      socket.removeListener("notification");
+      socket.removeListener("increment_global");
+      socket.removeListener("personal_update");
+    };
   }, []);
 
   if (location.pathname === "/") return null;
@@ -110,7 +137,7 @@ export function AppSidebar() {
               />
               {notifications?.length > 0 ? (
                 <div className="w-4 right-1  flex items-center justify-center h-4 bg-red-700 absolute text-white">
-                  2
+                  {notifications.length}
                 </div>
               ) : null}
             </SidebarGroupLabel>
@@ -119,10 +146,10 @@ export function AppSidebar() {
                 {items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <a href={item.url}>
+                      <Link to={item.url}>
                         <item.icon />
                         <span>{item.title}</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}

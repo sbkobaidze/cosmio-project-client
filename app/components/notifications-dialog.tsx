@@ -25,7 +25,7 @@ const NotificationsDialog = () => {
         <div>
           {notifications.length ? (
             notifications.map((notification, index) => (
-              <div>{notification}</div>
+              <div key={index}>{notification}</div>
             ))
           ) : (
             <div>No notifications</div>

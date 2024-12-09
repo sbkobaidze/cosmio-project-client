@@ -17,8 +17,12 @@ export interface SessionState {
   error: string | null;
 }
 
-export type Logins = {
-  email: string;
-  sign_in_count: number;
-  sign_in_dates: string[];
+export type PersonalLogins = {
+  total_sign_ins: number;
+  dates: { date: string }[];
+};
+
+export type GlobalLogins = {
+  total_sign_ins: number;
+  dates: { date: string; email: string }[];
 };
